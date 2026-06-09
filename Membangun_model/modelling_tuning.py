@@ -39,8 +39,9 @@ def tune_model(data_path='dataset_processed.csv'):
             with mlflow.start_run(nested=True):
                 m = Prophet(**params).fit(df)
                 
-                # Cross-validation
-                df_cv = cross_validation(m, initial='180 days', period='30 days', horizon='30 days', parallel="processes")
+                # Cross-validation (Dipercepat)
+                # Menggunakan rentang initial yang besar agar jumlah simulasi cross-validation menjadi minimal (1 atau 2 simulasi saja)
+                df_cv = cross_validation(m, initial='900 days', period='180 days', horizon='30 days', parallel="processes")
                 df_p = performance_metrics(df_cv, rolling_window=1)
                 rmse = df_p['rmse'].values[0]
                 rmses.append(rmse)
