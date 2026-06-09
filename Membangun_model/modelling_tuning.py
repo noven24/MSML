@@ -15,9 +15,9 @@ def tune_model(data_path='dataset_processed.csv'):
     print("Loading data for tuning...")
     df = pd.read_csv(data_path)
     
-    # ==== Kriteria 2 (Skilled): Localhost Tracking ====
-    # Kita set tracking URI secara eksplisit ke folder lokal untuk menghapus sisa konfigurasi jaringan sebelumnya
-    mlflow.set_tracking_uri("file:./mlruns")
+    # ==== Kriteria 2 (Advanced): DagsHub Tracking ====
+    import dagshub
+    dagshub.init(repo_owner='noven24', repo_name='MSML', mlflow=True)
     mlflow.set_experiment("Latihan Credit Scoring")
     
     # Mengaktifkan autologging untuk model Prophet
