@@ -24,3 +24,10 @@ jobs:
       run: |
         cd Membangun_model
         python modelling_tuning.py
+    
+    - name: Simpan Model sebagai Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: trained-model                  
+        path: Membangun_model/model_config.json
+        retention-days: 7
