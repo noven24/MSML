@@ -20,5 +20,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r Membangun_model/requirements.txt
-    - name: Test successful
-      run: echo "Workflow is running successfully without any errors!"
+    - name: Jalankan Model Training
+      run: |
+        cd Membangun_model
+        python modelling_tuning.py

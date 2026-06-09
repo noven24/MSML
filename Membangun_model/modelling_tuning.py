@@ -7,7 +7,7 @@ import os
 import mlflow
 import matplotlib.pyplot as plt
 
-def tune_model(data_path='dataset_processed.csv'):
+def tune_model(data_path='namadataset_preprocessing/dataset_processed.csv'):
     if not os.path.exists(data_path):
         print(f"Error: {data_path} not found. Run dataset_preprocessing.py first.")
         return
@@ -15,9 +15,7 @@ def tune_model(data_path='dataset_processed.csv'):
     print("Loading data for tuning...")
     df = pd.read_csv(data_path)
     
-    # ==== Kriteria 2 (Advanced/Skilled): DagsHub Tracking ====
-    import dagshub
-    dagshub.init(repo_owner='noven24', repo_name='MSML', mlflow=True)
+
     mlflow.set_experiment("Latihan Credit Scoring")
     
     # Mengaktifkan autologging untuk model Prophet
@@ -64,7 +62,25 @@ def tune_model(data_path='dataset_processed.csv'):
         # Train ulang dengan parameter terbaik agar modelnya tersimpan sebagai artefak utama
         best_model = Prophet(**best_params).fit(df)
 
-        # (Untuk kriteria skilled, kita tidak perlu log 2 artefak ekstra yang diperuntukkan bagi advance)
+        # ==== Advanced Criteria: Log at least 2 manual artifacts ====
+        # Artifact 1: Plot forecast
+        print("Generating forecast plot artifact...")
+        future = best_model.make_future_dataframe(periods=30)
+        forecast = best_model.predict(future)
+        fig = best_model.plot(forecast)
+        fig.savefig("forecast_plot.png")
+        mlflow.log_artifact("forecast_plot.png")
+        plt.close(fig)
+        
+        # Artifact 2: Requirements / Config
+        import json
+        with open("model_config.json", "w") as f:
+            json.dump(best_params, f)
+        mlflow.log_artifact("model_config.json")
+        
+        # We also have requirements.txt in the same folder, let's log it too
+        if os.path.exists("requirements.txt"):
+            mlflow.log_artifact("requirements.txt")
 
     return best_params
 
