@@ -16,7 +16,8 @@ def tune_model(data_path='dataset_processed.csv'):
     df = pd.read_csv(data_path)
     
     # ==== Kriteria 2 (Skilled): Localhost Tracking ====
-    mlflow.set_tracking_uri("http://127.0.0.1:5000/")
+    # Kita tidak lagi menggunakan HTTP URI untuk menghindari masalah Port 5000 di Windows
+    # Data akan langsung disimpan di folder 'mlruns' secara lokal (file system)
     mlflow.set_experiment("Latihan Credit Scoring")
     
     # Mengaktifkan autologging untuk model Prophet
