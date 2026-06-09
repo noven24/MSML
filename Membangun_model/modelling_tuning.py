@@ -5,7 +5,6 @@ import itertools
 import numpy as np
 import os
 import mlflow
-import dagshub
 import matplotlib.pyplot as plt
 
 def tune_model(data_path='dataset_processed.csv'):
@@ -17,14 +16,8 @@ def tune_model(data_path='dataset_processed.csv'):
     df = pd.read_csv(data_path)
     
     # ==== Kriteria 2 (Skilled): Localhost Tracking ====
-    # mlflow.set_tracking_uri("http://127.0.0.1:5000/")
-    
-    # ==== Kriteria 2 (Advanced): DagsHub Tracking ====
-    # Pastikan Anda memiliki akun DagsHub dan mengganti "noven24/MSML" dengan repository Anda
-    # Jika DagsHub meminta kredensial, Anda akan diarahkan untuk login di browser
-    dagshub.init(repo_owner='noven24', repo_name='MSML', mlflow=True)
-    
-    mlflow.set_experiment("MSML_Prophet_Experiment")
+    mlflow.set_tracking_uri("http://127.0.0.1:5000/")
+    mlflow.set_experiment("Latihan Credit Scoring")
     
     # Mengaktifkan autologging untuk model Prophet
     mlflow.prophet.autolog()
@@ -52,7 +45,7 @@ def tune_model(data_path='dataset_processed.csv'):
                 rmse = df_p['rmse'].values[0]
                 rmses.append(rmse)
                 
-                # Autologging sudah merekam metrik, tetapi kita bisa tambahkan manual
+                # Autologging merekam metrik
                 mlflow.log_metric("rmse", rmse)
 
         # Mencari parameter terbaik
@@ -67,18 +60,10 @@ def tune_model(data_path='dataset_processed.csv'):
         mlflow.log_params({"best_" + k: v for k, v in best_params.items()})
         mlflow.log_metric("best_rmse", best_rmse)
         
-        # Train ulang dengan parameter terbaik
+        # Train ulang dengan parameter terbaik agar modelnya tersimpan sebagai artefak utama
         best_model = Prophet(**best_params).fit(df)
-        
-        # ==== Kriteria 2 (Advanced): Minimal dua artefak tambahan ====
-        # Artefak 1: File dataset yang digunakan
-        mlflow.log_artifact(data_path, artifact_path="data")
-        
-        # Artefak 2: Plot komponen model Prophet
-        fig = best_model.plot_components(best_model.predict(df))
-        fig.savefig("prophet_components.png")
-        mlflow.log_artifact("prophet_components.png", artifact_path="plots")
-        plt.close(fig)
+
+        # (Untuk kriteria skilled, kita tidak perlu log 2 artefak ekstra yang diperuntukkan bagi advance)
 
     return best_params
 
