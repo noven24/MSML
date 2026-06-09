@@ -18,8 +18,8 @@ def tune_model(data_path='namadataset_preprocessing/dataset_processed.csv'):
 
     mlflow.set_experiment("Latihan Credit Scoring")
     
-    # Mengaktifkan autologging untuk model Prophet
-    mlflow.prophet.autolog()
+    # Mengaktifkan autologging untuk model Prophet (tidak disupport di versi ini)
+    # mlflow.autolog()
 
     # Define hyperparameter grid
     param_grid = {  
