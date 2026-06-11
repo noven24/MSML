@@ -1,88 +1,56 @@
 import pandas as pd
-from prophet import Prophet
-from prophet.diagnostics import cross_validation, performance_metrics
-import itertools
-import numpy as np
 import os
 import mlflow
-import matplotlib.pyplot as plt
+import mlflow.sklearn
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import mean_squared_error
 
-def tune_model(data_path='namadataset_preprocessing/dataset_processed.csv'):
+def tune_model(data_path='namadataset_preprocessing/insurance_preprocessed.csv'):
     if not os.path.exists(data_path):
-        print(f"Error: {data_path} not found. Run dataset_preprocessing.py first.")
+        print(f"Error: {data_path} not found. Pastikan Anda menjalankan kode ini dari folder yang benar.")
         return
 
-    print("Loading data for tuning...")
+    print(f"Loading data from {data_path}...")
     df = pd.read_csv(data_path)
     
-
-    mlflow.set_experiment("Latihan Credit Scoring")
+    # Fitur dan Target untuk dataset insurance
+    X = df[['age', 'sex', 'bmi', 'children', 'smoker', 'region']]
+    y = df['charges']
     
-    # Mengaktifkan autologging untuk model Prophet (tidak disupport di versi ini)
-    # mlflow.autolog()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # Define hyperparameter grid
-    param_grid = {  
-        'changepoint_prior_scale': [0.01, 0.1],
-        'seasonality_prior_scale': [0.1, 1.0]
+    # Set nama eksperimen
+    mlflow.set_experiment("Tuning Insurance Model")
+    
+    # Kriteria Wajib: Menggunakan autolog dari MLflow
+    print("Mengaktifkan MLflow autolog...")
+    mlflow.autolog()
+
+    # Define hyperparameter grid untuk RandomForest
+    param_grid = {
+        'n_estimators': [50, 100],
+        'max_depth': [None, 10, 20]
     }
 
-    all_params = [dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())]
-    rmses = []
-
-    print(f"Starting Grid Search for {len(all_params)} parameter combinations...")
-    
-    # Mulai logging MLflow
-    with mlflow.start_run(run_name="Hyperparameter Tuning") as parent_run:
-        for params in all_params:
-            with mlflow.start_run(nested=True):
-                m = Prophet(**params).fit(df)
-                
-                # Cross-validation (Dipercepat & Fix Deadlock Windows)
-                df_cv = cross_validation(m, initial='730 days', period='180 days', horizon='30 days')
-                df_p = performance_metrics(df_cv, rolling_window=1)
-                rmse = df_p['rmse'].values[0]
-                rmses.append(rmse)
-                
-                # Autologging merekam metrik
-                mlflow.log_metric("rmse", rmse)
-
-        # Mencari parameter terbaik
-        best_idx = np.argmin(rmses)
-        best_params = all_params[best_idx]
-        best_rmse = rmses[best_idx]
+    print("Mulai Hyperparameter Tuning dengan GridSearchCV...")
+    with mlflow.start_run(run_name="GridSearch_Tuning"):
+        rf = RandomForestRegressor(random_state=42)
+        grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=3, scoring='neg_mean_squared_error', n_jobs=-1)
         
-        print(f"Best RMSE: {best_rmse}")
-        print(f"Best Parameters: {best_params}")
+        # Fit GridSearchCV (MLflow autolog akan merekam semua metric, param, dan best_model otomatis)
+        grid_search.fit(X_train, y_train)
         
-        # Log Best Parameters pada run parent
-        mlflow.log_params({"best_" + k: v for k, v in best_params.items()})
-        mlflow.log_metric("best_rmse", best_rmse)
+        # Prediksi menggunakan model terbaik
+        best_model = grid_search.best_estimator_
+        preds = best_model.predict(X_test)
+        rmse = mean_squared_error(y_test, preds) ** 0.5
         
-        # Train ulang dengan parameter terbaik agar modelnya tersimpan sebagai artefak utama
-        best_model = Prophet(**best_params).fit(df)
-
-        # ==== Advanced Criteria: Log at least 2 manual artifacts ====
-        # Artifact 1: Plot forecast
-        print("Generating forecast plot artifact...")
-        future = best_model.make_future_dataframe(periods=30)
-        forecast = best_model.predict(future)
-        fig = best_model.plot(forecast)
-        fig.savefig("forecast_plot.png")
-        mlflow.log_artifact("forecast_plot.png")
-        plt.close(fig)
+        print(f"Hyperparameter Tuning Selesai!")
+        print(f"Best Parameters: {grid_search.best_params_}")
+        print(f"Best Model RMSE pada data test: {rmse}")
         
-        # Artifact 2: Requirements / Config
-        import json
-        with open("model_config.json", "w") as f:
-            json.dump(best_params, f)
-        mlflow.log_artifact("model_config.json")
-        
-        # We also have requirements.txt in the same folder, let's log it too
-        if os.path.exists("requirements.txt"):
-            mlflow.log_artifact("requirements.txt")
-
-    return best_params
+    print("Selesai! Model beserta artifact (MLmodel, conda.yaml, model.pkl, dll) telah dicatat ke MLflow.")
 
 if __name__ == '__main__':
     tune_model()
