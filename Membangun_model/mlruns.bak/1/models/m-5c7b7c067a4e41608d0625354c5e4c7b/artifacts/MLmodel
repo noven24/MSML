@@ -1,0 +1,31 @@
+artifact_path: file:E:/download/MSML Dicoding/SMSML_Dianwan Noven Nur Fauzian/Membangun_model/mlruns/1/models/m-5c7b7c067a4e41608d0625354c5e4c7b/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.5
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+is_signature_from_type_hint: false
+mlflow_version: 3.13.0
+model_id: m-5c7b7c067a4e41608d0625354c5e4c7b
+model_size_bytes: 7409204
+model_uuid: m-5c7b7c067a4e41608d0625354c5e4c7b
+prompts: null
+run_id: 8310e9c9a2fc4b6a9af2ab755b1c79b0
+signature:
+  inputs: '[{"type": "integer", "name": "year", "required": true}, {"type": "integer",
+    "name": "month", "required": true}, {"type": "integer", "name": "day", "required":
+    true}, {"type": "integer", "name": "dayofweek", "required": true}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1]}}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2026-06-09 16:03:34.008910'
